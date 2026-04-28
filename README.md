@@ -49,4 +49,4 @@ Semua request AI berjalan lewat server route agar `OPENROUTER_API_KEY` tidak boc
 - Mock component database sudah mencakup CPU, GPU, motherboard, RAM, SSD, PSU, case, cooler, dan UPS.
 - Admin mode saat ini menyimpan perubahan hanya di Zustand state browser.
 
-codex resume 019dd38f-2dfb-77c1-bf55-15866a859fcc
+
