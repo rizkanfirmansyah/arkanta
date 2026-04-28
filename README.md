@@ -282,7 +282,7 @@ Note:
 
 The general workflow of A.R.K.A.N.T.A. BUILDER is:
 
-```txt
+
 User opens the application
 ↓
 User starts the builder wizard
