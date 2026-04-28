@@ -7,12 +7,13 @@ import {
   estimateBuildWattage,
 } from "@/lib/scoring";
 import {
+  createChangeAnalysisSystemPrompt,
   createBuildRecommendationPrompt,
   createChangeAnalysisPrompt,
+  createDiagnosisSystemPrompt,
   createDiagnosisPrompt,
-  PC_CHANGE_ANALYSIS_SYSTEM_PROMPT,
-  PC_DIAGNOSIS_SYSTEM_PROMPT,
-  PC_RECOMMENDATION_SYSTEM_PROMPT,
+  createRecommendationSystemPrompt,
+  PromptLocale,
 } from "@/lib/prompts";
 import { safeJsonParse, slugify } from "@/lib/utils";
 import {
@@ -133,13 +134,16 @@ function normalizeBuildRecommendationResponse(
   };
 }
 
-function createLocalBuilds(input: UserIntake, diagnosis: DiagnosisResult): BuildRecommendationResponse {
+function createLocalBuilds(input: UserIntake, diagnosis: DiagnosisResult, locale: PromptLocale): BuildRecommendationResponse {
+  const isId = locale === "id";
   const buildSkeletons: RecommendedBuild[] = [
     {
       id: slugify("Intel NVIDIA Balanced"),
       name: "Intel/NVIDIA Balanced",
       type: "intel_nvidia",
-      targetUser: "User yang ingin build seimbang untuk gaming, kerja, dan software NVIDIA-friendly.",
+      targetUser: isId
+        ? "User yang ingin build seimbang untuk gaming, kerja, dan software NVIDIA-friendly."
+        : "Users who want a balanced build for gaming, productivity, and NVIDIA-friendly software.",
       estimatedPrice: 0,
       estimatedWattage: 0,
       components: {
@@ -154,25 +158,46 @@ function createLocalBuilds(input: UserIntake, diagnosis: DiagnosisResult): Build
         ups: buildRef(diagnosis.riskProfile.electricityRisk === "high" ? "ups-1500va" : "ups-650va"),
       },
       scores: { gaming: 0, editing: 0, value: 0, safety: 0, upgrade: 0, powerEfficiency: 0 },
-      pros: ["Mudah diseimbangkan", "Cocok untuk software berbasis CUDA/encoder NVIDIA"],
-      cons: ["Value mentah tidak setinggi opsi AMD", "Platform Intel ini bukan yang paling panjang upgrade-nya"],
+      pros: isId
+        ? ["Mudah diseimbangkan", "Cocok untuk software berbasis CUDA/encoder NVIDIA"]
+        : ["Easy to balance", "Great fit for CUDA and NVIDIA encoder software"],
+      cons: isId
+        ? ["Value mentah tidak setinggi opsi AMD", "Platform Intel ini bukan yang paling panjang upgrade-nya"]
+        : ["Raw value is lower than AMD option", "This Intel platform is not the longest-term upgrade path"],
       warnings: [],
-      upgradePath: ["Upgrade RAM ke 32GB jika editing makin berat", "Naik ke RTX 4070 jika budget dan listrik memungkinkan"],
+      upgradePath: isId
+        ? ["Upgrade RAM ke 32GB jika editing makin berat", "Naik ke RTX 4070 jika budget dan listrik memungkinkan"]
+        : ["Upgrade to 32GB RAM if editing gets heavier", "Move to RTX 4070 if budget and power conditions allow"],
       psuAdvice: {
-        summary: "PSU dipilih bukan hanya dari watt, tetapi juga proteksi dan efisiensi untuk menjaga stabilitas build.",
+        summary: isId
+          ? "PSU dipilih bukan hanya dari watt, tetapi juga proteksi dan efisiensi untuk menjaga stabilitas build."
+          : "PSU is selected not by wattage alone, but also by protections and efficiency to keep the build stable.",
         recommendedEfficiency: diagnosis.riskProfile.electricityRisk === "low" ? "80+ Bronze" : "80+ Gold",
         requiredProtections: ["OVP", "UVP", "OCP", "OPP", "SCP", "OTP"],
-        headroomReason: "Headroom dijaga agar GPU boost dan lonjakan beban tetap aman.",
+        headroomReason: isId
+          ? "Headroom dijaga agar GPU boost dan lonjakan beban tetap aman."
+          : "Headroom is maintained so GPU boost and transient loads remain safe.",
         upsRecommended: diagnosis.riskProfile.electricityRisk !== "low",
-        upsReason: diagnosis.riskProfile.electricityRisk !== "low" ? "Listrik rumah berisiko, UPS membantu shutdown aman." : "UPS opsional untuk proteksi data.",
+        upsReason:
+          diagnosis.riskProfile.electricityRisk !== "low"
+            ? isId
+              ? "Listrik rumah berisiko, UPS membantu shutdown aman."
+              : "Home electricity risk is elevated, so UPS helps safe shutdown."
+            : isId
+              ? "UPS opsional untuk proteksi data."
+              : "UPS is optional for additional data protection.",
       },
-      aiSummary: "Build ini fokus ke keseimbangan performa, software compatibility, dan stabilitas harian.",
+      aiSummary: isId
+        ? "Build ini fokus ke keseimbangan performa, software compatibility, dan stabilitas harian."
+        : "This build focuses on balancing performance, software compatibility, and daily stability.",
     },
     {
       id: slugify("AMD Value"),
       name: "AMD Value Build",
       type: "amd_value",
-      targetUser: "User yang mengejar rasio performa per rupiah, terutama untuk gaming.",
+      targetUser: isId
+        ? "User yang mengejar rasio performa per rupiah, terutama untuk gaming."
+        : "Users who target strong performance-per-cost, especially for gaming.",
       estimatedPrice: 0,
       estimatedWattage: 0,
       components: {
@@ -187,19 +212,33 @@ function createLocalBuilds(input: UserIntake, diagnosis: DiagnosisResult): Build
         ups: buildRef(diagnosis.riskProfile.electricityRisk !== "low" ? "ups-1500va" : "ups-650va"),
       },
       scores: { gaming: 0, editing: 0, value: 0, safety: 0, upgrade: 0, powerEfficiency: 0 },
-      pros: ["Value gaming sangat kuat", "Platform AM5 lebih panjang untuk upgrade"],
-      cons: ["Creator app tertentu lebih nyaman di NVIDIA", "GPU Radeon bisa lebih boros"],
+      pros: isId
+        ? ["Value gaming sangat kuat", "Platform AM5 lebih panjang untuk upgrade"]
+        : ["Excellent gaming value", "AM5 offers a longer upgrade runway"],
+      cons: isId
+        ? ["Creator app tertentu lebih nyaman di NVIDIA", "GPU Radeon bisa lebih boros"]
+        : ["Some creator apps are smoother on NVIDIA", "Mid-tier Radeon options may be less power efficient"],
       warnings: [],
-      upgradePath: ["Naik GPU ke RX 7800 XT jika daya rumah aman", "Tambah storage 2TB untuk library besar"],
+      upgradePath: isId
+        ? ["Naik GPU ke RX 7800 XT jika daya rumah aman", "Tambah storage 2TB untuk library besar"]
+        : ["Upgrade to RX 7800 XT if house power is safe", "Add 2TB storage for large libraries"],
       psuAdvice: {
-        summary: "Walau fokus value, PSU tetap tidak boleh dipilih asal murah.",
+        summary: isId
+          ? "Walau fokus value, PSU tetap tidak boleh dipilih asal murah."
+          : "Even in a value-focused build, PSU should never be selected purely by low price.",
         recommendedEfficiency: diagnosis.riskProfile.electricityRisk === "high" ? "80+ Gold" : "80+ Bronze",
         requiredProtections: ["OVP", "UVP", "OCP", "OPP", "SCP", "OTP"],
-        headroomReason: "GPU Radeon kelas menengah masih butuh margin daya yang sehat.",
+        headroomReason: isId
+          ? "GPU Radeon kelas menengah masih butuh margin daya yang sehat."
+          : "Mid-range Radeon GPUs still need healthy power margin.",
         upsRecommended: diagnosis.riskProfile.electricityRisk !== "low",
-        upsReason: "Jika listrik sering mati, UPS lebih berguna daripada memaksakan upgrade GPU kecil.",
+        upsReason: isId
+          ? "Jika listrik sering mati, UPS lebih berguna daripada memaksakan upgrade GPU kecil."
+          : "If outages are frequent, UPS is usually more useful than forcing a minor GPU upgrade.",
       },
-      aiSummary: "Pilihan ini cocok jika fokus utama adalah gaming value dan upgrade platform jangka menengah.",
+      aiSummary: isId
+        ? "Pilihan ini cocok jika fokus utama adalah gaming value dan upgrade platform jangka menengah."
+        : "This option fits users focused on gaming value and a mid-term platform upgrade path.",
     },
     {
       id: slugify("Alternative Context Build"),
@@ -212,7 +251,9 @@ function createLocalBuilds(input: UserIntake, diagnosis: DiagnosisResult): Build
               ? "Low Power Build"
               : "Alternative Balanced Build",
       type: pickAlternativeMode(diagnosis.strategy.mode),
-      targetUser: "Disesuaikan dengan konteks risiko, workload, dan rencana upgrade user.",
+      targetUser: isId
+        ? "Disesuaikan dengan konteks risiko, workload, dan rencana upgrade user."
+        : "Tailored to the user's risk profile, workload, and upgrade plan.",
       estimatedPrice: 0,
       estimatedWattage: 0,
       components: {
@@ -265,19 +306,33 @@ function createLocalBuilds(input: UserIntake, diagnosis: DiagnosisResult): Build
         ups: buildRef(diagnosis.riskProfile.electricityRisk === "high" ? "ups-1500va" : "ups-1200va"),
       },
       scores: { gaming: 0, editing: 0, value: 0, safety: 0, upgrade: 0, powerEfficiency: 0 },
-      pros: ["Lebih spesifik ke konteks penggunaan", "Trade-off dijaga lebih jelas"],
-      cons: ["Bisa mengorbankan value murni", "Konfigurasi lebih konservatif untuk alasan keamanan"],
+      pros: isId
+        ? ["Lebih spesifik ke konteks penggunaan", "Trade-off dijaga lebih jelas"]
+        : ["More context-aware", "Trade-offs are managed more explicitly"],
+      cons: isId
+        ? ["Bisa mengorbankan value murni", "Konfigurasi lebih konservatif untuk alasan keamanan"]
+        : ["May sacrifice raw value", "Configuration is more conservative for safety reasons"],
       warnings: [],
-      upgradePath: ["Tambah UPS kapasitas lebih besar untuk kerja penting", "Naik storage kedua untuk backup dan project"],
+      upgradePath: isId
+        ? ["Tambah UPS kapasitas lebih besar untuk kerja penting", "Naik storage kedua untuk backup dan project"]
+        : ["Use a higher-capacity UPS for critical work", "Add a secondary drive for backup and project files"],
       psuAdvice: {
-        summary: "Build alternatif ini lebih konservatif terhadap headroom dan kualitas PSU.",
+        summary: isId
+          ? "Build alternatif ini lebih konservatif terhadap headroom dan kualitas PSU."
+          : "This alternative build is more conservative on PSU headroom and quality.",
         recommendedEfficiency: diagnosis.riskProfile.electricityRisk === "high" || diagnosis.strategy.mode === "creator_first" ? "80+ Gold" : "80+ Bronze",
         requiredProtections: ["OVP", "UVP", "OCP", "OPP", "SCP", "OTP"],
-        headroomReason: "Margin daya dipakai untuk menjaga kestabilan saat workload berat atau listrik kurang stabil.",
+        headroomReason: isId
+          ? "Margin daya dipakai untuk menjaga kestabilan saat workload berat atau listrik kurang stabil."
+          : "Power margin is reserved to keep stability during heavy workloads or unstable electricity.",
         upsRecommended: diagnosis.riskProfile.electricityRisk !== "low" || diagnosis.strategy.mode === "creator_first",
-        upsReason: "UPS penting untuk proteksi data dan shutdown aman pada workload penting.",
+        upsReason: isId
+          ? "UPS penting untuk proteksi data dan shutdown aman pada workload penting."
+          : "UPS is important for data protection and safe shutdown during critical workloads.",
       },
-      aiSummary: "Build ketiga mengambil pendekatan lebih spesifik terhadap konteks risiko dan prioritas user.",
+      aiSummary: isId
+        ? "Build ketiga mengambil pendekatan lebih spesifik terhadap konteks risiko dan prioritas user."
+        : "The third build takes a more context-specific approach to risk and user priorities.",
     },
   ];
 
@@ -288,22 +343,36 @@ function createLocalBuilds(input: UserIntake, diagnosis: DiagnosisResult): Build
     const warnings = [];
 
     if (estimatedPrice > input.budget) {
-      warnings.push("Build melebihi budget saat ini. Pertimbangkan downgrade GPU, storage, atau casing.");
+      warnings.push(
+        isId
+          ? "Build melebihi budget saat ini. Pertimbangkan downgrade GPU, storage, atau casing."
+          : "This build exceeds the current budget. Consider downgrading GPU, storage, or case."
+      );
     }
     if (diagnosis.riskProfile.electricityRisk === "high" && !build.components.ups.id) {
-      warnings.push("Listrik berisiko tinggi, tetapi build belum menyertakan UPS.");
+      warnings.push(
+        isId
+          ? "Listrik berisiko tinggi, tetapi build belum menyertakan UPS."
+          : "Electricity risk is high, but the build does not include a UPS."
+      );
     }
 
     return { ...build, estimatedPrice, estimatedWattage, scores, warnings: [...build.warnings, ...warnings] };
   });
 
   return {
-    recommendationSummary: "Tiga build disusun untuk memperlihatkan trade-off antara performa, value, dan keamanan pemakaian.",
+    recommendationSummary: isId
+      ? "Tiga build disusun untuk memperlihatkan trade-off antara performa, value, dan keamanan pemakaian."
+      : "Three builds are prepared to make the trade-offs across performance, value, and safety explicit.",
     builds,
     finalRecommendation:
       diagnosis.strategy.mode === "safety_first"
-        ? "Untuk kondisi listrik berisiko, build alternatif yang lebih aman biasanya lebih bijak daripada memaksakan GPU lebih tinggi."
-        : "Pilih build dengan skor dan trade-off yang paling cocok dengan software utama serta kondisi listrik rumah kamu.",
+        ? isId
+          ? "Untuk kondisi listrik berisiko, build alternatif yang lebih aman biasanya lebih bijak daripada memaksakan GPU lebih tinggi."
+          : "For risky electricity conditions, a safer alternative build is usually wiser than forcing a higher-tier GPU."
+        : isId
+          ? "Pilih build dengan skor dan trade-off yang paling cocok dengan software utama serta kondisi listrik rumah kamu."
+          : "Choose the build with scores and trade-offs that best fit your main software and home electricity conditions.",
   };
 }
 
@@ -364,10 +433,10 @@ async function requestOpenRouter(systemPrompt: string, userPrompt: string) {
   return data?.choices?.[0]?.message?.content as string | undefined;
 }
 
-export async function getDiagnosis(input: UserIntake) {
-  const fallback = createLocalDiagnosis(input);
+export async function getDiagnosis(input: UserIntake, locale: PromptLocale = "en") {
+  const fallback = createLocalDiagnosis(input, locale);
   try {
-    const content = await requestOpenRouter(PC_DIAGNOSIS_SYSTEM_PROMPT, createDiagnosisPrompt(input));
+    const content = await requestOpenRouter(createDiagnosisSystemPrompt(locale), createDiagnosisPrompt(input, locale));
     if (!content) {
       logWarn("diagnosis", "Diagnosis dihasilkan oleh system fallback lokal karena AI tidak aktif atau tidak mengembalikan konten.");
       return fallback;
@@ -387,12 +456,12 @@ export async function getDiagnosis(input: UserIntake) {
   }
 }
 
-export async function getRecommendations(input: UserIntake, diagnosis: DiagnosisResult) {
-  const fallback = createLocalBuilds(input, diagnosis);
+export async function getRecommendations(input: UserIntake, diagnosis: DiagnosisResult, locale: PromptLocale = "en") {
+  const fallback = createLocalBuilds(input, diagnosis, locale);
   try {
     const content = await requestOpenRouter(
-      PC_RECOMMENDATION_SYSTEM_PROMPT,
-      createBuildRecommendationPrompt({ userInput: input, diagnosis, components: mockComponents }),
+      createRecommendationSystemPrompt(locale),
+      createBuildRecommendationPrompt({ userInput: input, diagnosis, components: mockComponents, locale }),
     );
     if (!content) {
       logWarn("recommend-builds", "Rekomendasi build dihasilkan oleh system fallback lokal karena AI tidak aktif atau tidak mengembalikan konten.");
@@ -421,17 +490,19 @@ export async function analyzeBuildChange(
   oldBuild: RecommendedBuild,
   newBuild: RecommendedBuild,
   changedComponent: unknown,
+  locale: PromptLocale = "en",
 ) {
-  const fallback = analyzeChangeLocally(oldBuild, newBuild, diagnosis);
+  const fallback = analyzeChangeLocally(oldBuild, newBuild, diagnosis, locale);
   try {
     const content = await requestOpenRouter(
-      PC_CHANGE_ANALYSIS_SYSTEM_PROMPT,
+      createChangeAnalysisSystemPrompt(locale),
       createChangeAnalysisPrompt({
         userInput: input,
         diagnosis,
         oldBuild,
         newBuild,
         changedComponent,
+        locale,
       }),
     );
     if (!content) {

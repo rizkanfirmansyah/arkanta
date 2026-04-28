@@ -52,6 +52,7 @@ export function ComponentEditor() {
           oldBuild: original,
           newBuild: nextBuild,
           changedComponent: { category, component: nextBuild.components[category] },
+          locale,
         }),
       });
 

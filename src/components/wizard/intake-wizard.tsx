@@ -80,7 +80,7 @@ export function IntakeWizard() {
       const diagnosisResponse = await fetch("/api/ai/diagnosis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userInput: intake }),
+        body: JSON.stringify({ userInput: intake, locale }),
       });
       if (!diagnosisResponse.ok) {
         throw new Error(t(locale, "diagnosisApiFailed"));
@@ -91,7 +91,7 @@ export function IntakeWizard() {
       const recommendationResponse = await fetch("/api/ai/recommend-builds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userInput: intake, diagnosis }),
+        body: JSON.stringify({ userInput: intake, diagnosis, locale }),
       });
       if (!recommendationResponse.ok) {
         throw new Error(t(locale, "recommendationApiFailed"));

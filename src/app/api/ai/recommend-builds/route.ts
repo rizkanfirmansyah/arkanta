@@ -4,9 +4,10 @@ import { DiagnosisResult, UserIntake } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { userInput: UserIntake; diagnosis?: DiagnosisResult };
-    const diagnosis = body.diagnosis ?? (await getDiagnosis(body.userInput));
-    const recommendations = await getRecommendations(body.userInput, diagnosis);
+    const body = (await request.json()) as { userInput: UserIntake; diagnosis?: DiagnosisResult; locale?: "en" | "id" };
+    const locale = body.locale ?? "en";
+    const diagnosis = body.diagnosis ?? (await getDiagnosis(body.userInput, locale));
+    const recommendations = await getRecommendations(body.userInput, diagnosis, locale);
     return NextResponse.json(recommendations);
   } catch (error) {
     return NextResponse.json(

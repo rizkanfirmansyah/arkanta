@@ -9,6 +9,7 @@ import {
   RiskLevel,
   UserIntake,
 } from "@/types";
+import type { PromptLocale } from "./prompts";
 import { clamp } from "./utils";
 import { validateBuildCompatibility } from "./compatibility";
 
@@ -67,7 +68,8 @@ function riskLevelScore(level: RiskLevel) {
   return 1;
 }
 
-export function createLocalDiagnosis(input: UserIntake): DiagnosisResult {
+export function createLocalDiagnosis(input: UserIntake, locale: PromptLocale = "en"): DiagnosisResult {
+  const isId = locale === "id";
   const electricityScore =
     (input.frequentOutage ? 2 : 0) +
     (input.mcbTripsOften ? 2 : 0) +
@@ -100,53 +102,125 @@ export function createLocalDiagnosis(input: UserIntake): DiagnosisResult {
               : "balanced";
 
   const problems = [
-    input.frequentOutage ? "Listrik rumah sering mati sehingga proteksi daya menjadi prioritas." : null,
-    input.mcbTripsOften ? "MCB sering jeglek, jadi konsumsi daya puncak harus dijaga." : null,
-    input.hotRoom ? "Ruangan panas meningkatkan kebutuhan airflow dan cooler yang lebih baik." : null,
-    input.silentPreference ? "Keinginan PC senyap membatasi pilihan cooler, case, dan GPU." : null,
+    input.frequentOutage
+      ? isId
+        ? "Listrik rumah sering mati sehingga proteksi daya menjadi prioritas."
+        : "Frequent outages make power protection a top priority."
+      : null,
+    input.mcbTripsOften
+      ? isId
+        ? "MCB sering jeglek, jadi konsumsi daya puncak harus dijaga."
+        : "Frequent MCB trips mean peak power draw must be controlled."
+      : null,
+    input.hotRoom
+      ? isId
+        ? "Ruangan panas meningkatkan kebutuhan airflow dan cooler yang lebih baik."
+        : "A hot room increases the need for stronger airflow and cooling."
+      : null,
+    input.silentPreference
+      ? isId
+        ? "Keinginan PC senyap membatasi pilihan cooler, case, dan GPU."
+        : "A silent PC preference limits cooler, case, and GPU choices."
+      : null,
   ].filter(Boolean) as string[];
 
   return {
     summary:
       electricityRisk === "high"
-        ? "Kebutuhan kamu mengarah ke build yang tetap responsif tetapi lebih aman untuk kondisi listrik rumah yang tidak stabil."
-        : "Kebutuhan kamu cocok untuk build modern yang disesuaikan dengan performa, efisiensi, dan jalur upgrade.",
+        ? isId
+          ? "Kebutuhan kamu mengarah ke build yang tetap responsif tetapi lebih aman untuk kondisi listrik rumah yang tidak stabil."
+          : "Your profile points to a build that stays responsive while prioritizing safety under unstable home electricity."
+        : isId
+          ? "Kebutuhan kamu cocok untuk build modern yang disesuaikan dengan performa, efisiensi, dan jalur upgrade."
+          : "Your profile fits a modern build tuned for performance, efficiency, and practical upgrade path.",
     mainNeeds: input.mainNeeds.map((need) => need.replace("_", "/")),
-    detectedProblems: problems.length ? problems : ["Tidak ada masalah besar, fokus bisa ke value dan performa."],
+    detectedProblems: problems.length
+      ? problems
+      : [isId ? "Tidak ada masalah besar, fokus bisa ke value dan performa." : "No major blocker detected, so the focus can stay on value and performance."],
     riskProfile: { electricityRisk, thermalRisk, workloadRisk, upgradeNeed },
     strategy: {
       mode: strategy,
       reason:
         strategy === "safety_first"
-          ? "Risiko listrik tinggi, jadi PSU berkualitas, headroom sehat, dan UPS lebih penting daripada memaksimalkan GPU."
+          ? isId
+            ? "Risiko listrik tinggi, jadi PSU berkualitas, headroom sehat, dan UPS lebih penting daripada memaksimalkan GPU."
+            : "Electricity risk is high, so PSU quality, healthy headroom, and UPS matter more than maximizing GPU tier."
           : strategy === "creator_first"
-            ? "Workload creator atau AI butuh CPU/GPU yang stabil, RAM lebih lega, dan storage cepat."
+            ? isId
+              ? "Workload creator atau AI butuh CPU/GPU yang stabil, RAM lebih lega, dan storage cepat."
+              : "Creator and AI workloads need stable CPU/GPU performance, more RAM headroom, and faster storage."
             : strategy === "low_power"
-              ? "Daya rumah atau prioritas hemat listrik mendorong build efisien dan mudah di-upgrade."
+              ? isId
+                ? "Daya rumah atau prioritas hemat listrik mendorong build efisien dan mudah di-upgrade."
+                : "House power limits or low-power priority favor an efficient and easy-to-upgrade build."
               : strategy === "value_first"
-                ? "Kebutuhan lebih cocok dikejar lewat rasio performa per rupiah."
-                : "Keseimbangan performa, keamanan, dan upgrade masih menjadi pendekatan terbaik.",
+                ? isId
+                  ? "Kebutuhan lebih cocok dikejar lewat rasio performa per rupiah."
+                  : "Your needs are best met by maximizing performance-per-cost."
+                : isId
+                  ? "Keseimbangan performa, keamanan, dan upgrade masih menjadi pendekatan terbaik."
+                  : "A balanced approach across performance, safety, and upgrade path remains the best fit.",
       componentPriorities: [
-        electricityRisk !== "low" ? "PSU berkualitas dengan proteksi lengkap" : "GPU sesuai target resolusi",
-        workloadRisk !== "low" ? "RAM dan storage yang cukup untuk workload berat" : "CPU seimbang",
-        thermalRisk !== "low" ? "Case airflow dan cooler memadai" : "Jalur upgrade realistis",
+        electricityRisk !== "low"
+          ? isId
+            ? "PSU berkualitas dengan proteksi lengkap"
+            : "Quality PSU with complete protections"
+          : isId
+            ? "GPU sesuai target resolusi"
+            : "GPU matched to target resolution",
+        workloadRisk !== "low"
+          ? isId
+            ? "RAM dan storage yang cukup untuk workload berat"
+            : "Sufficient RAM and storage for heavy workloads"
+          : isId
+            ? "CPU seimbang"
+            : "Balanced CPU choice",
+        thermalRisk !== "low"
+          ? isId
+            ? "Case airflow dan cooler memadai"
+            : "Adequate case airflow and cooling"
+          : isId
+            ? "Jalur upgrade realistis"
+            : "Realistic upgrade path",
       ],
     },
     questionsToConsider: [
-      "Apakah monitor target sudah ada atau masih masuk budget?",
-      "Apakah data kerja penting sehingga UPS wajib untuk shutdown aman?",
-      "Apakah software utama lebih diuntungkan oleh CUDA atau cukup dengan Radeon?",
+      isId
+        ? "Apakah monitor target sudah ada atau masih masuk budget?"
+        : "Do you already have the target monitor, or should it be included in budget planning?",
+      isId
+        ? "Apakah data kerja penting sehingga UPS wajib untuk shutdown aman?"
+        : "Is your work data critical enough that a UPS should be mandatory for safe shutdown?",
+      isId
+        ? "Apakah software utama lebih diuntungkan oleh CUDA atau cukup dengan Radeon?"
+        : "Does your main software benefit more from CUDA, or is Radeon sufficient?",
     ],
     warnings: [
       electricityRisk !== "low"
-        ? "Sertifikasi 80+ adalah efisiensi, bukan satu-satunya indikator kualitas PSU. Lihat proteksi dan reputasi unit juga."
-        : "Pastikan budget tidak habis di satu komponen hingga build menjadi tidak seimbang.",
-      thermalRisk === "high" ? "Ruangan panas perlu airflow casing dan fan layout yang lebih serius." : "Pastikan upgrade path tetap realistis sesuai platform.",
+        ? isId
+          ? "Sertifikasi 80+ adalah efisiensi, bukan satu-satunya indikator kualitas PSU. Lihat proteksi dan reputasi unit juga."
+          : "80+ certification indicates efficiency, not full PSU quality. Always check protections and model reputation."
+        : isId
+          ? "Pastikan budget tidak habis di satu komponen hingga build menjadi tidak seimbang."
+          : "Avoid spending too much on a single part and making the build imbalanced.",
+      thermalRisk === "high"
+        ? isId
+          ? "Ruangan panas perlu airflow casing dan fan layout yang lebih serius."
+          : "A hot room requires stronger case airflow and fan layout planning."
+        : isId
+          ? "Pastikan upgrade path tetap realistis sesuai platform."
+          : "Keep the upgrade path realistic for the chosen platform.",
     ],
   };
 }
 
-export function analyzeChangeLocally(oldBuild: RecommendedBuild, newBuild: RecommendedBuild, diagnosis: DiagnosisResult): ChangeAnalysis {
+export function analyzeChangeLocally(
+  oldBuild: RecommendedBuild,
+  newBuild: RecommendedBuild,
+  diagnosis: DiagnosisResult,
+  locale: PromptLocale = "en",
+): ChangeAnalysis {
+  const isId = locale === "id";
   const oldPrice = calculateBuildPrice(oldBuild);
   const newPrice = calculateBuildPrice(newBuild);
   const oldWatt = estimateBuildWattage(oldBuild);
@@ -169,34 +243,88 @@ export function analyzeChangeLocally(oldBuild: RecommendedBuild, newBuild: Recom
           : "acceptable";
 
   return {
-    summary: recommendation === "dangerous" ? "Perubahan ini menurunkan margin keamanan build." : "Perubahan berhasil dianalisis dari sisi harga, performa, dan risiko.",
+    summary: recommendation === "dangerous"
+      ? isId
+        ? "Perubahan ini menurunkan margin keamanan build."
+        : "This change reduces the build's safety margin."
+      : isId
+        ? "Perubahan berhasil dianalisis dari sisi harga, performa, dan risiko."
+        : "The change has been analyzed across price, performance, and risk.",
     recommendation,
     positiveImpacts: [
-      newPrice < oldPrice ? "Harga build turun sehingga budget lebih longgar." : "Komponen baru berpotensi meningkatkan kenyamanan pemakaian.",
-      newWatt <= oldWatt ? "Konsumsi daya tidak bertambah agresif." : "Performa atau kapasitas build meningkat.",
+      newPrice < oldPrice
+        ? isId
+          ? "Harga build turun sehingga budget lebih longgar."
+          : "Build cost decreases, so the budget is more flexible."
+        : isId
+          ? "Komponen baru berpotensi meningkatkan kenyamanan pemakaian."
+          : "The new component can improve day-to-day usability.",
+      newWatt <= oldWatt
+        ? isId
+          ? "Konsumsi daya tidak bertambah agresif."
+          : "Power consumption does not increase aggressively."
+        : isId
+          ? "Performa atau kapasitas build meningkat."
+          : "Build performance or capacity is improved.",
     ],
     negativeImpacts: [
-      newPrice > oldPrice ? "Biaya total build naik." : "Penghematan bisa memunculkan trade-off di fitur atau headroom.",
-      newWatt > oldWatt ? "Daya puncak build meningkat dan perlu dicek terhadap PSU dan listrik rumah." : "Potensi performa mentok jika komponen turun kelas.",
+      newPrice > oldPrice
+        ? isId
+          ? "Biaya total build naik."
+          : "Total build cost increases."
+        : isId
+          ? "Penghematan bisa memunculkan trade-off di fitur atau headroom."
+          : "Savings may introduce trade-offs in features or headroom.",
+      newWatt > oldWatt
+        ? isId
+          ? "Daya puncak build meningkat dan perlu dicek terhadap PSU dan listrik rumah."
+          : "Peak power draw increases and should be checked against PSU and house power."
+        : isId
+          ? "Potensi performa mentok jika komponen turun kelas."
+          : "Performance potential can be limited if the component tier is reduced.",
     ],
     priceImpact: {
       oldPrice,
       newPrice,
       difference: newPrice - oldPrice,
-      explanation: newPrice > oldPrice ? "Perubahan menambah biaya demi performa atau fitur." : "Perubahan menekan budget tetapi perlu dilihat efek sampingnya.",
+      explanation: newPrice > oldPrice
+        ? isId
+          ? "Perubahan menambah biaya demi performa atau fitur."
+          : "The change increases cost in exchange for performance or features."
+        : isId
+          ? "Perubahan menekan budget tetapi perlu dilihat efek sampingnya."
+          : "The change reduces budget pressure but side effects should be reviewed.",
     },
-    performanceImpact: newWatt > oldWatt ? "Secara umum build baru lebih agresif dan berpotensi lebih kencang." : "Tidak ada lonjakan performa besar, fokus lebih ke efisiensi atau value.",
-    powerImpact: `Estimasi daya berubah dari ${oldWatt}W menjadi ${newWatt}W.`,
+    performanceImpact: newWatt > oldWatt
+      ? isId
+        ? "Secara umum build baru lebih agresif dan berpotensi lebih kencang."
+        : "Overall, the new build is more aggressive and can deliver higher performance."
+      : isId
+        ? "Tidak ada lonjakan performa besar, fokus lebih ke efisiensi atau value."
+        : "No major performance jump; the change leans toward efficiency or value.",
+    powerImpact: isId
+      ? `Estimasi daya berubah dari ${oldWatt}W menjadi ${newWatt}W.`
+      : `Estimated power changes from ${oldWatt}W to ${newWatt}W.`,
     safetyImpact:
       recommendation === "dangerous"
-        ? "Tidak disarankan karena kondisi listrik user berisiko dan PSU/build baru menurunkan margin keamanan."
-        : "Masih aman selama headroom PSU, proteksi, dan airflow tetap dijaga.",
+        ? isId
+          ? "Tidak disarankan karena kondisi listrik user berisiko dan PSU/build baru menurunkan margin keamanan."
+          : "Not recommended because electricity conditions are risky and the new PSU/build lowers safety margin."
+        : isId
+          ? "Masih aman selama headroom PSU, proteksi, dan airflow tetap dijaga."
+          : "Still safe as long as PSU headroom, protections, and airflow remain adequate.",
     compatibilityWarnings: warnings,
     finalAdvice:
       recommendation === "dangerous"
-        ? "Lebih aman pertahankan PSU berkualitas lebih tinggi atau upgrade UPS lebih dulu."
+        ? isId
+          ? "Lebih aman pertahankan PSU berkualitas lebih tinggi atau upgrade UPS lebih dulu."
+          : "Safer option is to keep a higher-quality PSU or upgrade UPS first."
         : recommendation === "not_recommended"
-          ? "Perubahan bisa dipakai, tetapi ada mismatch yang sebaiknya diperbaiki dulu."
-          : "Perubahan masih masuk akal untuk kebutuhan user saat ini.",
+          ? isId
+            ? "Perubahan bisa dipakai, tetapi ada mismatch yang sebaiknya diperbaiki dulu."
+            : "The change is usable, but mismatches should be fixed first."
+          : isId
+            ? "Perubahan masih masuk akal untuk kebutuhan user saat ini."
+            : "The change is reasonable for current needs.",
   };
 }

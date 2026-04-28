@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
       oldBuild: RecommendedBuild;
       newBuild: RecommendedBuild;
       changedComponent: unknown;
+      locale?: "en" | "id";
     };
 
     const analysis = await analyzeBuildChange(
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
       body.oldBuild,
       body.newBuild,
       body.changedComponent,
+      body.locale ?? "en",
     );
 
     return NextResponse.json(analysis);
