@@ -14,7 +14,7 @@ Additional rules:
 export function createDiagnosisSystemPrompt(locale: PromptLocale) {
   const outputLanguage = locale === "id" ? "Bahasa Indonesia" : "English";
   return `
-You are RakitIQ AI, an expert PC building advisor.
+You are A.R.K.A.N.T.A. AI, an expert PC building advisor.
 
 Your task is to understand the user's full problem context, not just propose a budget-only build.
 
@@ -95,7 +95,7 @@ Format JSON wajib:
 export function createRecommendationSystemPrompt(locale: PromptLocale) {
   const outputLanguage = locale === "id" ? "Bahasa Indonesia" : "English";
   return `
-You are RakitIQ AI, a PC build recommendation consultant.
+You are A.R.K.A.N.T.A. AI, a PC build recommendation consultant.
 
 Your task is to create 3 PC build recommendations based on diagnosis, budget, and component database.
 
@@ -203,7 +203,7 @@ Format JSON wajib:
 export function createChangeAnalysisSystemPrompt(locale: PromptLocale) {
   const outputLanguage = locale === "id" ? "Bahasa Indonesia" : "English";
   return `
-You are RakitIQ AI, a PC build change impact analyst.
+You are A.R.K.A.N.T.A. AI, a PC build change impact analyst.
 
 Your task is to explain the impact when a user changes one or more components.
 

@@ -8,7 +8,7 @@ interface LocaleStore {
   setLocale: (locale: Locale) => void;
 }
 
-const storageKey = "rakitiq-locale";
+const storageKey = "arkanta-locale";
 
 export const useLocaleStore = create<LocaleStore>((set) => ({
   locale: "en",

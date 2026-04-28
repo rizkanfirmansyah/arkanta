@@ -29,7 +29,7 @@ import {
 } from "@/types";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const LOG_PREFIX = "[RakitIQ AI]";
+const LOG_PREFIX = "[A.R.K.A.N.T.A. AI]";
 
 function logInfo(scope: string, message: string) {
   console.info(`${LOG_PREFIX} [${scope}] ${message}`);
@@ -53,7 +53,7 @@ function getHeaders() {
     Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
     "Content-Type": "application/json",
     "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-    "X-Title": process.env.NEXT_PUBLIC_APP_NAME ?? "RakitIQ",
+    "X-Title": process.env.NEXT_PUBLIC_APP_NAME ?? "A.R.K.A.N.T.A.",
   };
 }
 

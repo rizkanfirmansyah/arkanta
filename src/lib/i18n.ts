@@ -44,12 +44,12 @@ export const translations = {
     tradeoffCard: "Trade-off Card",
     tradeoffExample:
       "A bigger GPU was not chosen because the house only has 1300VA and unstable power can become a risk. It is safer to allocate more budget to a Gold PSU and UPS.",
-    rakitiqFlow: "RakitIQ Flow",
+    rakitiqFlow: "A.R.K.A.N.T.A. Flow",
     flowText: "User problem -> diagnosis -> build strategy -> recommendation -> component edit -> impact analysis.",
     capability: "Capability",
     featureTitle: "Designed like a modern SaaS advisor for PC building",
     featureDescription:
-      "RakitIQ combines an intake wizard, AI diagnosis, build comparison, and component editor into one smooth SPA workflow.",
+      "A.R.K.A.N.T.A. combines an intake wizard, AI diagnosis, build comparison, and component editor into one smooth SPA workflow.",
     feature1Title: "Contextual AI Recommendations",
     feature1Desc: "Not just budget-based. AI reads software, target resolution, and user priorities.",
     feature2Title: "Compare 3 Builds",
@@ -63,7 +63,7 @@ export const translations = {
     feature6Title: "Trade-offs & Warnings",
     feature6Desc: "AI explains why a choice is safer or riskier for the user's environment.",
     builderEyebrow: "Builder",
-    builderTitle: "RakitIQ Builder Workflow",
+    builderTitle: "A.R.K.A.N.T.A. Builder Workflow",
     builderDescription:
       "Complete the intake wizard, get AI diagnosis, compare 3 builds, then edit components with impact analysis.",
     loadingAi: "AI is preparing the diagnosis and build recommendations...",
@@ -170,12 +170,12 @@ export const translations = {
     tradeoffCard: "Trade-off Card",
     tradeoffExample:
       "GPU lebih tinggi tidak dipilih karena daya rumah 1300VA dan listrik bisa tidak stabil. Budget lebih aman dialihkan ke PSU Gold dan UPS.",
-    rakitiqFlow: "Flow RakitIQ",
+    rakitiqFlow: "Flow A.R.K.A.N.T.A.",
     flowText: "Masalah user -> diagnosis -> strategi build -> rekomendasi -> edit komponen -> analisis dampak.",
     capability: "Capability",
     featureTitle: "Didesain seperti SaaS advisor untuk rakit PC modern",
     featureDescription:
-      "RakitIQ menggabungkan intake wizard, AI diagnosis, komparasi build, dan editor komponen dalam satu alur SPA yang ringan.",
+      "A.R.K.A.N.T.A. menggabungkan intake wizard, AI diagnosis, komparasi build, dan editor komponen dalam satu alur SPA yang ringan.",
     feature1Title: "AI Rekomendasi Kontekstual",
     feature1Desc: "Bukan sekadar budget. AI membaca software, target resolusi, dan prioritas user.",
     feature2Title: "Bandingkan 3 Build",
@@ -189,7 +189,7 @@ export const translations = {
     feature6Title: "Trade-off & Warning",
     feature6Desc: "AI menjelaskan kenapa pilihan tertentu aman atau berisiko untuk kondisi rumahmu.",
     builderEyebrow: "Builder",
-    builderTitle: "RakitIQ Builder Workflow",
+    builderTitle: "A.R.K.A.N.T.A. Builder Workflow",
     builderDescription: "Isi intake wizard, dapatkan diagnosis AI, bandingkan 3 build, lalu edit komponen dengan analisis dampak.",
     loadingAi: "AI sedang menyusun diagnosis dan rekomendasi build...",
     diagnosisOnlyWarning:
